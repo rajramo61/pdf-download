@@ -44,7 +44,6 @@ public class ProcessDownload {
             throws URISyntaxException, IOException, ExecutionException, InterruptedException {
         final String rootUrl = buildUrlPrefix(webPageUrl);
 
-        final DownLoadFiles downLoadFiles = new DownLoadFiles();
         final String currentPath = new java.io.File( localPath ).getCanonicalPath();
         LOGGER.debug("Total PDF links on the webpage {}", pdfLinks.size());
 
