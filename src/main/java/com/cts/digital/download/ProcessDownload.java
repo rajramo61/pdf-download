@@ -9,6 +9,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 
 import static java.util.Objects.nonNull;
 
@@ -36,17 +40,26 @@ public class ProcessDownload {
         return uri.getProtocol();
     }
 
-    public void processLinks(final List<String> pdfLinks, final String localPath, final String webPageUrl) throws URISyntaxException, IOException {
+    public void processLinks(final List<String> pdfLinks, final String localPath, final String webPageUrl)
+            throws URISyntaxException, IOException, ExecutionException, InterruptedException {
         final String rootUrl = buildUrlPrefix(webPageUrl);
 
         final DownLoadFiles downLoadFiles = new DownLoadFiles();
         final String currentPath = new java.io.File( localPath ).getCanonicalPath();
         LOGGER.debug("Total PDF links on the webpage {}", pdfLinks.size());
 
-
-        pdfLinks.stream()
-                .map(pdfLink -> downLoadFiles.buildUri(pdfLink, rootUrl))
-                .forEach(pdfUrl -> this.downloadFilesToLocalMachine(pdfUrl, currentPath));
+        if(pdfLinks.size() > 100){
+            ForkJoinPool threadPool = new ForkJoinPool(10);
+            threadPool.submit(
+                    () -> pdfLinks.parallelStream()
+                            .map(pdfLink -> downLoadFiles.buildUri(pdfLink, rootUrl))
+                            .forEach(pdfUrl -> this.downloadFilesToLocalMachine(pdfUrl, currentPath))
+            ).get();
+        }else{
+            pdfLinks.stream()
+                    .map(pdfLink -> downLoadFiles.buildUri(pdfLink, rootUrl))
+                    .forEach(pdfUrl -> this.downloadFilesToLocalMachine(pdfUrl, currentPath));
+        }
     }
 
     public String buildUrlPrefix(final String webPageUrl) throws URISyntaxException, MalformedURLException {
